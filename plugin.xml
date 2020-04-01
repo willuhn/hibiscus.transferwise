@@ -3,7 +3,7 @@
 <plugin xmlns="http://www.willuhn.de/schema/jameica-plugin"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.willuhn.de/schema/jameica-plugin https://www.willuhn.de/schema/jameica-plugin-1.2.xsd"
-        name="hibiscus.transferwhise" version="1.0.0-nightly" class="de.willuhn.jameica.hbci.transferwise.Plugin" shared="true">
+        name="hibiscus.transferwise" version="1.0.0-nightly" class="de.willuhn.jameica.hbci.transferwise.Plugin" shared="true">
 
   <description>Erweitert Hibiscus um Support für TransferWise</description>
   <url>https://www.willuhn.de/products/hibiscus/releases/nightly/hibiscus.transferwise-1.0.0-nightly.zip</url>
