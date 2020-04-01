@@ -78,6 +78,11 @@
 		       srcdir="${src.dir}">
 			<classpath refid="compilepath" />
 		</javac>
+	  
+    <copy todir="${class.dir}/img">
+      <fileset dir="${src.dir}/img" />
+    </copy>
+
 	</target>
 
 
