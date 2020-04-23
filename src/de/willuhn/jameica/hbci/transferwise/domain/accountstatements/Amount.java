@@ -14,8 +14,6 @@ import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import de.willuhn.jameica.hbci.transferwise.domain.CurrencyType;
-
 /**
  * JSON-Mapping.
  */
@@ -30,7 +28,7 @@ public class Amount
   /**
    * Waehrung.
    */
-  public CurrencyType currency;
+  public String currency;
 }
 
 

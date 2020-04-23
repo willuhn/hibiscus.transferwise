@@ -12,8 +12,6 @@ package de.willuhn.jameica.hbci.transferwise.domain.accountstatements;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import de.willuhn.jameica.hbci.transferwise.domain.CurrencyType;
-
 /**
  * JSON-Mapping.
  */
@@ -37,7 +35,7 @@ public class AccountStatementQuery
   /**
    * Waehrung.
    */
-  public CurrencyType currency;
+  public String currency;
   
   /**
    * Die Konto-ID.

@@ -36,7 +36,6 @@ import de.willuhn.jameica.hbci.rmi.Umsatz;
 import de.willuhn.jameica.hbci.server.VerwendungszweckUtil;
 import de.willuhn.jameica.hbci.synchronize.jobs.SynchronizeJobKontoauszug;
 import de.willuhn.jameica.hbci.transferwise.Plugin;
-import de.willuhn.jameica.hbci.transferwise.domain.CurrencyType;
 import de.willuhn.jameica.hbci.transferwise.domain.accountstatements.AccountStatement;
 import de.willuhn.jameica.hbci.transferwise.domain.accountstatements.Amount;
 import de.willuhn.jameica.hbci.transferwise.domain.accountstatements.Transaction;
@@ -82,7 +81,8 @@ public class TransferwiseSynchronizeJobKontoauszug extends SynchronizeJobKontoau
       final Date startDate = this.getStartDate(k);
 
       final Map<String,String> params = new HashMap<String,String>();
-      params.put("currency",CurrencyType.determine(k.getWaehrung()).name());
+      final String curr = StringUtils.trimToNull(k.getWaehrung());
+      params.put("currency",curr != null ? curr : HBCIProperties.CURRENCY_DEFAULT_DE);
       params.put("intervalStart",df.format(startDate));
       params.put("intervalEnd",df.format(DateUtil.endOfDay(new Date())));
       
