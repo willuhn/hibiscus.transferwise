@@ -14,11 +14,8 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import javax.annotation.Resource;
-
-import org.apache.commons.lang.StringUtils;
 
 import de.willuhn.annotation.Lifecycle;
 import de.willuhn.annotation.Lifecycle.Type;
@@ -74,10 +71,9 @@ public class TransferwiseSynchronizeBackend extends AbstractSynchronizeBackend<T
     List<Konto> list = super.getSynchronizeKonten(k);
     List<Konto> result = new ArrayList<Konto>();
     
-    // Wir wollen nur die Offline-Konten und jene, bei denen Scripting explizit konfiguriert ist
     for (Konto konto:list)
     {
-      if (this.supports(konto))
+      if (Plugin.getStatus(konto).checkSyncProvider())
         result.add(konto);
     }
     
@@ -100,7 +96,7 @@ public class TransferwiseSynchronizeBackend extends AbstractSynchronizeBackend<T
    */
   public boolean supports(Class<? extends SynchronizeJob> type, Konto konto)
   {
-    if (!this.supports(konto))
+    if (!Plugin.getStatus(konto).checkSyncProvider())
       return false;
 
     return super.supports(type,konto);
@@ -117,7 +113,7 @@ public class TransferwiseSynchronizeBackend extends AbstractSynchronizeBackend<T
       for (SynchronizeJob job:jobs)
       {
         Konto konto = job.getKonto();
-        if (!this.supports(konto))
+        if (!Plugin.getStatus(konto).checkSyncProvider())
           throw new ApplicationException(i18n.tr("Das Zugangsverfahren {0} unterstützt das Konto {1} nicht",this.getName(),konto.getLongName()));
       }
     }
@@ -131,40 +127,11 @@ public class TransferwiseSynchronizeBackend extends AbstractSynchronizeBackend<T
   }
   
   /**
-   * Prueft, ob das Konto prinzipiell unterstuetzt wird.
-   * @param konto das Konto.
-   * @return true, wenn es prinzipiell unterstuetzt wird.
-   */
-  boolean supports(Konto konto)
-  {
-    if (konto == null)
-      return false;
-    
-    try
-    {
-      if (konto.hasFlag(Konto.FLAG_DISABLED))
-        return false;
-      
-      String backend = StringUtils.trimToNull(konto.getBackendClass());
-      if (!Objects.equals(backend,this.getClass().getName()))
-        return false;
-      
-      // Checken, ob die BIC passt.
-      return Objects.equals(StringUtils.trimToNull(konto.getBic()),Plugin.BIC_TRANSFERWISE);
-    }
-    catch (RemoteException re)
-    {
-      Logger.error("unable to determine synchronization support for konto",re);
-    }
-    return false;
-  }
-  
-  /**
    * @see de.willuhn.jameica.hbci.synchronize.AbstractSynchronizeBackend#getPropertyNames(de.willuhn.jameica.hbci.rmi.Konto)
    */
   public List<String> getPropertyNames(Konto konto)
   {
-    if (!this.supports(konto))
+    if (!Plugin.getStatus(konto).checkSyncProvider())
       return null;
     
     return Arrays.asList(Plugin.META_PARAM_APIKEY);

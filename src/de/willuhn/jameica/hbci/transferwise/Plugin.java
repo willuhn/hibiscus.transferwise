@@ -10,6 +10,7 @@
 
 package de.willuhn.jameica.hbci.transferwise;
 
+import de.willuhn.jameica.hbci.rmi.Konto;
 import de.willuhn.jameica.plugin.AbstractPlugin;
 
 /**
@@ -46,4 +47,14 @@ public class Plugin extends AbstractPlugin
    * Meta-Parameter mit der Account-ID.
    */
   public final static String META_PARAM_ACCOUNT = "account.id";
+  
+  /**
+   * Liefert den Support-Status des Kontos.
+   * @param konto das zu pruefende Konto.
+   * @return der Support-Status.
+   */
+  public static SupportStatus getStatus(Konto konto)
+  {
+    return new SupportStatus(konto);
+  }
 }

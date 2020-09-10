@@ -22,6 +22,7 @@ import de.willuhn.jameica.hbci.SynchronizeOptions;
 import de.willuhn.jameica.hbci.rmi.Konto;
 import de.willuhn.jameica.hbci.synchronize.jobs.SynchronizeJob;
 import de.willuhn.jameica.hbci.synchronize.jobs.SynchronizeJobKontoauszug;
+import de.willuhn.jameica.hbci.transferwise.Plugin;
 import de.willuhn.logging.Logger;
 
 /**
@@ -50,10 +51,10 @@ public class TransferwiseSynchronizeJobProviderKontoauszug implements Transferwi
     {
       try
       {
-        if (!backend.supports(kt))
+        if (!Plugin.getStatus(kt).checkSyncProvider())
           continue;
 
-        // Unterstuetzen wir Kontoauszug ueberhaupt?
+        // Wird der Geschaeftsvorfall unterstuetzt?
         if (!backend.supports(type,k))
           continue;
 

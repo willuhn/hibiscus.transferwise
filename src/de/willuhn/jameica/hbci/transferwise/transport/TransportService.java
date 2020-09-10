@@ -295,17 +295,10 @@ public class TransportService
       b.setPath((path.startsWith("/") ? "" : "/") + path);
       if (params != null)
       {
-//        StringBuilder sb = new StringBuilder();
-//        boolean first = true;
         for (Entry<String,String> e:params.entrySet())
         {
-          // Machen wir selbst weil URIBuilder die ":" in den Uhrzeiten escaped
           b.addParameter(e.getKey(),e.getValue());
-//          sb.append(first ? "" : "&");
-//          first = false;
-//          sb.append(e.getKey()).append("=").append(e.getValue());
         }
-//        b.setCustomQuery(sb.toString());
       }
       
       URI uri = b.build();
