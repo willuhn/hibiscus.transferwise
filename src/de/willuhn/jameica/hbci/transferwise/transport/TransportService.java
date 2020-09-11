@@ -19,11 +19,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -37,6 +39,7 @@ import de.willuhn.annotation.Lifecycle;
 import de.willuhn.annotation.Lifecycle.Type;
 import de.willuhn.io.IOUtil;
 import de.willuhn.jameica.hbci.rmi.Konto;
+import de.willuhn.jameica.hbci.transferwise.KeyStorage;
 import de.willuhn.jameica.hbci.transferwise.Plugin;
 import de.willuhn.jameica.hbci.transferwise.domain.ApiError;
 import de.willuhn.jameica.hbci.transferwise.domain.accounts.Account;
@@ -59,6 +62,10 @@ public class TransportService
 {
   private final static Settings settings = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getSettings();
   private final static I18N i18n = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getI18N();
+  
+  private final static String HEADER_2FA_RESULT    = "X-2FA-Approval-Result";
+  private final static String HEADER_2FA_TOKEN     = "X-2FA-Approval";
+  private final static String HEADER_2FA_SIGNATURE = "X-Signature";
   
   private CloseableHttpClient client = null;
   private final ObjectMapper mapper = new ObjectMapper();
@@ -107,7 +114,7 @@ public class TransportService
         return profile;
       
       Logger.info("fetching profiles");
-      UserProfile[] result = this.get(konto,"/v1/profiles",null,UserProfile[].class);
+      UserProfile[] result = this.get(konto,"/v1/profiles",null,null,UserProfile[].class);
 
       if (result == null || result.length == 0)
       {
@@ -195,7 +202,7 @@ public class TransportService
       Logger.info("fetching accounts");
       Map<String,String> params = new HashMap<String,String>();
       params.put("profileId",this.getProfile(konto));
-      Account[] result = this.get(konto,"/v1/borderless-accounts",params,Account[].class);
+      Account[] result = this.get(konto,"/v1/borderless-accounts",params,null,Account[].class);
 
       if (result == null || result.length == 0)
       {
@@ -271,11 +278,12 @@ public class TransportService
    * @param konto das Konto.
    * @param path der Pfad.
    * @param params die Parameter.
+   * @param token optionale Angabe eines 2FA-Tokens.
    * @param type der Response-Typ.
    * @return die deserialisierten Antwort-Daten.
    * @throws ApplicationException 
    */
-  public <T> T get(Konto konto, String path, Map<String,String> params, Class<T> type) throws ApplicationException
+  public <T> T get(Konto konto, String path, Map<String,String> params, String token, Class<T> type) throws ApplicationException
   {
     CloseableHttpResponse response = null;
     
@@ -306,9 +314,24 @@ public class TransportService
       final HttpGet request = new HttpGet(uri);
       request.addHeader("Authorization","Bearer " + apiKey);
       
+      if (token != null)
+      {
+        request.addHeader(HEADER_2FA_TOKEN,token);
+        request.addHeader(HEADER_2FA_SIGNATURE,KeyStorage.sign(konto,token));
+      }
+      
       response = this.client.execute(request);
       final StatusLine status = response.getStatusLine();
       final String json = this.read(response.getEntity().getContent());
+      if (status.getStatusCode() == 403)
+      {
+        // Checken, ob es ein SCA-Request ist
+        final Header headerStatus = response.getFirstHeader(HEADER_2FA_RESULT);
+        final Header headerToken  = response.getFirstHeader(HEADER_2FA_TOKEN);
+        final String s = headerToken != null ? StringUtils.trimToNull(headerToken.getValue()) : null;
+        if (headerStatus != null && Objects.equals(headerStatus.getValue(),"REJECTED") && s != null)
+          return this.get(konto,path,params,s,type);
+      }
       if (status.getStatusCode() > 299)
       {
         String msg = status.getStatusCode() + " " + status.getReasonPhrase();

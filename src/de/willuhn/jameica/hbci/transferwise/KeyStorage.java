@@ -13,6 +13,7 @@ package de.willuhn.jameica.hbci.transferwise;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
@@ -34,6 +35,11 @@ import de.willuhn.util.I18N;
 public class KeyStorage
 {
   private final static I18N i18n = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getI18N();
+  
+  private final static String KEY_ALG  = "RSA";
+  private final static int KEY_LENGTH  = 4096;
+  private final static String SIGN_ALG = "SHA256withRSA";
+  private final static String PROVIDER = BouncyCastleProvider.PROVIDER_NAME;
   
   private final static String SUFFIX_PRIVATE = ".private";
   private final static String SUFFIX_PUBLIC  = ".public";
@@ -74,7 +80,7 @@ public class KeyStorage
         return null;
       final X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(Base64.decode(pub));
 
-      final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      final KeyFactory keyFactory = KeyFactory.getInstance(KEY_ALG,PROVIDER);
       return new KeyPair(keyFactory.generatePublic(pubSpec),keyFactory.generatePrivate(privSpec));
     }
     catch (ApplicationException ae)
@@ -126,8 +132,8 @@ public class KeyStorage
       checkAccount(k);
       long started = System.currentTimeMillis();
       Logger.info("creating new key pair for account [id: " + k.getID() + "]");
-      final KeyPairGenerator kp = KeyPairGenerator.getInstance("RSA",BouncyCastleProvider.PROVIDER_NAME);
-      kp.initialize(4096); // Mindest-Anforderung seitens Transferwise sind 2048 Bit.
+      final KeyPairGenerator kp = KeyPairGenerator.getInstance(KEY_ALG,PROVIDER);
+      kp.initialize(KEY_LENGTH); // Mindest-Anforderung seitens Transferwise sind 2048 Bit.
       final KeyPair keypair = kp.generateKeyPair();
 
       // Private-Key speichern
@@ -153,6 +159,33 @@ public class KeyStorage
     {
       Logger.error("unable to create  key pair for account",e);
       throw new ApplicationException(i18n.tr("Erstellen des Schlüssels fehlgeschlagen: {0}",e.getMessage()));
+    }
+  }
+  
+  /**
+   * Erzeugt die Signatur.
+   * @param k das Konto.
+   * @param token der zu signierende Token.
+   * @return die Signatur.
+   * @throws ApplicationException
+   */
+  public static String sign(Konto k, String token) throws ApplicationException
+  {
+    final KeyPair kp = KeyStorage.getKey(k);
+    if (kp == null)
+      throw new ApplicationException(i18n.tr("Bitte erstellen Sie ein Schlüsselpaar für das TransferWise-Konto"));
+
+    try
+    {
+      Signature sig = Signature.getInstance(SIGN_ALG, PROVIDER);
+      sig.initSign(kp.getPrivate());
+      sig.update(token.getBytes("UTF-8"));
+      return Base64.encode(sig.sign());
+    }
+    catch (Exception e)
+    {
+      Logger.error("unable to create signature",e);
+      throw new ApplicationException(i18n.tr("Erstellen der Signatur fehlgeschlagen: {0}",e.getMessage()));
     }
   }
   
