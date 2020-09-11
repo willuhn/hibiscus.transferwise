@@ -10,57 +10,84 @@
 
 package de.willuhn.jameica.hbci.transferwise.gui.views;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.rmi.RemoteException;
-import java.security.KeyPair;
 
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.ProgressBar;
 
-import de.willuhn.io.IOUtil;
 import de.willuhn.jameica.gui.Action;
 import de.willuhn.jameica.gui.GUI;
-import de.willuhn.jameica.gui.dialogs.BackgroundTaskDialog;
-import de.willuhn.jameica.gui.internal.action.Start;
 import de.willuhn.jameica.gui.parts.Button;
+import de.willuhn.jameica.gui.parts.ButtonArea;
 import de.willuhn.jameica.gui.parts.InfoPanel;
 import de.willuhn.jameica.gui.util.Container;
 import de.willuhn.jameica.gui.util.SWTUtil;
 import de.willuhn.jameica.gui.util.SimpleContainer;
 import de.willuhn.jameica.hbci.rmi.Konto;
-import de.willuhn.jameica.hbci.transferwise.KeyStorage;
-import de.willuhn.jameica.hbci.transferwise.Plugin;
 import de.willuhn.jameica.hbci.transferwise.SupportStatus;
+import de.willuhn.jameica.hbci.transferwise.gui.action.KeyPairCreate;
+import de.willuhn.jameica.hbci.transferwise.gui.action.KeyPairDelete;
+import de.willuhn.jameica.hbci.transferwise.gui.action.PublicKeySave;
+import de.willuhn.jameica.hbci.transferwise.gui.action.SetupTransferWiseStep4;
 import de.willuhn.jameica.messaging.StatusBarMessage;
 import de.willuhn.jameica.system.Application;
-import de.willuhn.jameica.system.BackgroundTask;
-import de.willuhn.jameica.system.OperationCanceledException;
 import de.willuhn.logging.Logger;
 import de.willuhn.util.ApplicationException;
-import de.willuhn.util.I18N;
-import de.willuhn.util.ProgressMonitor;
 
 /**
  * View zum Einrichten eines TransferWise-Kontos.
  */
 public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
 {
-  private final static I18N i18n = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getI18N();
-  
-  private Konto konto = null;
+  private Konto konto          = null;
   private SupportStatus status = null;
-  private Button next = null;
   
-  private Button create = null;
+  private Button next     = null;
+  private Button create   = null;
+  private Button save     = null;
+  private Button delete   = null;
   private ProgressBar bar = null;
-  private KeyPair kp = null;
+  
+  /**
+   * @see de.willuhn.jameica.gui.AbstractView#reload()
+   */
+  @Override
+  public void reload() throws ApplicationException
+  {
+    try
+    {
+      next   = null;
+      create = null;
+      save   = null;
+      delete = null;
+      bar    = null;
+      
+      final Composite comp = this.getParent();
+      SWTUtil.disposeChildren(comp);
+      this.bind();
+      
+      comp.redraw();
+      comp.layout();
+    }
+    catch (ApplicationException ae)
+    {
+      throw ae;
+    }
+    catch (Exception e)
+    {
+      Logger.error("unable to reload page",e);
+      
+      // In dem Fall laden wir einfach die ganze View neu
+      GUI.startView(GUI.getCurrentView().getClass(),this.getCurrentObject());
+    }
+    finally
+    {
+      super.reload();
+    }
+  }
   
   /**
    * @see de.willuhn.jameica.gui.AbstractView#bind()
@@ -72,9 +99,11 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
 
     this.status = (SupportStatus) this.getCurrentObject();
     this.konto = status.getKonto();
+    final boolean haveKey = this.status.checkKeyPair();
 
     final Container c = new SimpleContainer(this.getParent());
 
+    
     final InfoPanel info = new InfoPanel()
     {
       /**
@@ -86,7 +115,7 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
         if (state == DrawState.TITLE_AFTER)
         {
           bar = createProgressBar(comp);
-          bar.setSelection(50);
+          bar.setSelection(40);
           return comp;
         }
         if (state == DrawState.COMMENT_BEFORE)
@@ -112,8 +141,17 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
 
           try
           {
-            final Button create = getCreate();
-            create.paint(comp2);
+            final ButtonArea buttons = new ButtonArea();
+            if (haveKey)
+            {
+              buttons.addButton(getSave());
+              buttons.addButton(getDelete());
+            }
+            else
+            {
+              buttons.addButton(getCreate());
+            }
+            buttons.paint(comp2);
           }
           catch (RemoteException re)
           {
@@ -130,22 +168,26 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
     
     final Button b = this.getNext();
     
-    if (!status.checkKeyPair())
+    if (haveKey)
+    {
+      info.setText(i18n.tr("Das Schlüsselpaar des Kontos ist korrekt konfiguriert.\n" +
+                           "Sie können den Schlüssel speichern oder löschen und anschließend einen neuen erzeugen."));
+      info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nKlicken Sie bitte auf \"Fertigstellen\", um den Assistenten zu beenden.",konto.getIban()));
+    }
+    else
     {
       info.setText(i18n.tr("Klicken Sie bitte auf die Schaltfläche \"Neues Schlüsselpaar erstellen...\", um einen neuen Schlüssel zu erzeugen.\n" +
                            "Speichern Sie die erstellte Schlüsseldatei ab und folgen Sie anschließend den Anweisungen auf der Webseite, um den neuen Schlüssel hochzuladen."));
       info.setUrl("https://www.willuhn.de/wiki/doku.php?id=support:hibiscus.transferwise#upload");
+      info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nKlicken Sie bitte anschließend auf \"Fertigstellen\", um den Assistenten zu beenden.",konto.getIban()));
       b.setEnabled(false);
-    }
-    else
-    {
-      bar.setSelection(50);
-      info.setText(i18n.tr("Das Schlüsselpaar des Kontos ist korrekt konfiguriert."));
-      info.setComment(i18n.tr("Klicken Sie bitte auf \"Fertigstellen\", um den Assistenten zu beenden."));
     }
     
     info.addButton(b);
     c.addPart(info);
+    
+    if (bar != null && haveKey)
+      bar.setSelection(80);
   }
   
   /**
@@ -157,24 +199,50 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
     if (this.next != null)
       return this.next;
     
-    this.next = new Button(i18n.tr("Fertigstellen"),new Action() {
-      
+    this.next = new Button(i18n.tr("Fertigstellen"),new SetupTransferWiseStep4(),this.getCurrentObject(),false,"ok.png");
+    return this.next;
+  }
+
+  /**
+   * Liefert den Loeschen-Button.
+   * @return der Loeschen-Button.
+   */
+  private Button getDelete()
+  {
+    if (this.delete != null)
+      return this.delete;
+    
+    this.delete = new Button(i18n.tr("Schlüssel löschen..."),new Action() {
       @Override
       public void handleAction(Object context) throws ApplicationException
       {
-        Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("TransferWise-Konto erfolgreich eingerichtet"),StatusBarMessage.TYPE_SUCCESS));
-        try
-        {
-          Application.getCallback().notifyUser(i18n.tr("Vergessen Sie nicht, die Schlüsseldatei auf der TransferWise-Webseite hochzuladen."));
-        }
-        catch (Exception e)
-        {
-          Logger.error("unable to notify user",e);
-        }
-        new Start().handleAction(null);
+        new KeyPairDelete().handleAction(konto);
+        
+        // Seite neu laden
+        GUI.getCurrentView().reload();
       }
-    },this.getCurrentObject(),false,"ok.png");
-    return this.next;
+    },this.konto,false,"user-trash-full.png");
+    return this.delete;
+  }
+
+  /**
+   * Liefert den Speichern-Button.
+   * @return der Speichern-Button.
+   */
+  private Button getSave()
+  {
+    if (this.save != null)
+      return this.save;
+    
+    this.save = new Button(i18n.tr("Schlüssel speichern..."),new Action() {
+      @Override
+      public void handleAction(Object context) throws ApplicationException
+      {
+        new PublicKeySave().handleAction(konto);
+        finish();
+      }
+    },this.konto,false,"document-save.png");
+    return this.save;
   }
 
   /**
@@ -187,107 +255,27 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
       return this.create;
     
     this.create = new Button(i18n.tr("Neues Schlüsselpaar erstellen..."),new Action() {
-      
       @Override
       public void handleAction(Object context) throws ApplicationException
       {
-        // Installation starten
-        BackgroundTask task = new BackgroundTask() {
-          public void run(ProgressMonitor monitor) throws ApplicationException
-          {
-            // Wir starten den Progress in einem extra Thread
-            final Thread progress = new Thread()
-            {
-              /**
-               * @see java.lang.Thread#run()
-               */
-              @Override
-              public void run()
-              {
-                for (int i=0;i<100;++i)
-                {
-                  try
-                  {
-                    Thread.sleep(20L);
-                    monitor.addPercentComplete(1);
-                  }
-                  catch (InterruptedException e)
-                  {
-                    return;
-                  }
-                }
-              }
-            };
-            progress.start();
-            
-            kp = KeyStorage.getKey(konto); // Fuer den Fall, dass der User einen Schluessel erstellt aber nicht abgespeichert hat.
-            if (kp == null)
-              kp = KeyStorage.createKey(konto);
-            
-            progress.interrupt();
-            monitor.setPercentComplete(100);
-          }
-          public boolean isInterrupted()
-          {
-            return false;
-          }
-          public void interrupt()
-          {
-          }
-        };
-
-        try
-        {
-          BackgroundTaskDialog bd = new BackgroundTaskDialog(BackgroundTaskDialog.POSITION_CENTER,task);
-          bd.setTitle(i18n.tr("Schlüsselerstellung"));
-          bd.setSideImage(SWTUtil.getImage("dialog-password.png"));
-          bd.setPanelText(i18n.tr("Erstelle neues Schlüsselpaar"));
-          bd.open();
-          
-          // Schluessel serialisieren
-          FileDialog d = new FileDialog(GUI.getShell(),SWT.SAVE);
-          d.setText(Application.getI18n().tr("Bitte wählen den Ordner aus, in dem Sie den Schlüssel speichern möchten."));
-          d.setFilterExtensions(new String[]{"*.pem"});
-          d.setFileName("transferwise-pubkey.pem");
-          d.setOverwrite(true);
-          String s = d.open();
-          if (s == null || s.length() == 0)
-          {
-            Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("Erstellung des Schlüsselpaares abgebrochen"),StatusBarMessage.TYPE_INFO));
-            return;
-          }
-          
-          final File f = new File(s);
-          JcaPEMWriter writer = null;
-          try
-          {
-            writer = new JcaPEMWriter(new OutputStreamWriter(new FileOutputStream(f)));
-            writer.writeObject(kp.getPublic());
-            writer.flush();
-          }
-          finally
-          {
-            IOUtil.close(writer);
-          }
-          Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("TransferWise-Konto erfolgreich eingerichtet"),StatusBarMessage.TYPE_SUCCESS));
-          bar.setSelection(100);
-          getNext().setEnabled(true);
-          getCreate().setEnabled(false);
-        }
-        catch (ApplicationException ae)
-        {
-          throw ae;
-        }
-        catch (OperationCanceledException oce)
-        {
-        }
-        catch (Exception e)
-        {
-          Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("Erstellung des Schlüsselpaares fehlgeschlagen"),StatusBarMessage.TYPE_ERROR));
-        }
-
+        // Die Action speichert den Schluessel auch gleich
+        new KeyPairCreate().handleAction(konto);
+        finish();
       }
     },this.getCurrentObject(),false,"stock_keyring.png");
     return this.create;
+  }
+  
+  /**
+   * Finalisiert den Assistenten.
+   */
+  private void finish()
+  {
+    if (bar != null)
+      bar.setSelection(100);
+    
+    Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("TransferWise-Konto erfolgreich eingerichtet"),StatusBarMessage.TYPE_SUCCESS));
+    getNext().setEnabled(true);
+    getCreate().setEnabled(false);
   }
 }

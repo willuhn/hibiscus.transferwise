@@ -24,15 +24,12 @@ import de.willuhn.jameica.hbci.transferwise.SupportStatus;
 import de.willuhn.jameica.hbci.transferwise.gui.action.SetupTransferWiseStep2;
 import de.willuhn.jameica.messaging.StatusBarMessage;
 import de.willuhn.jameica.system.Application;
-import de.willuhn.util.I18N;
 
 /**
  * View zum Einrichten eines TransferWise-Kontos.
  */
 public class SetupTransferWiseStep1 extends AbstractSetupTransferWise
 {
-  private final static I18N i18n = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getI18N();
-  
   /**
    * @see de.willuhn.jameica.gui.AbstractView#bind()
    */
@@ -78,7 +75,7 @@ public class SetupTransferWiseStep1 extends AbstractSetupTransferWise
     {
       info.setText(i18n.tr("Die BIC des Kontos ist korrekt."));
     }
-    info.setComment(i18n.tr("Für die Prüfung des API-Key klicken Sie bitte auf \"Weiter\"."));
+    info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nFür die Prüfung des API-Key klicken Sie bitte auf \"Weiter\".",k.getIban()));
     
     info.addButton(new Button(i18n.tr("Weiter"),new SetupTransferWiseStep2(),status,false,"go-next.png"));
     c.addPart(info);

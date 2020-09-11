@@ -39,15 +39,12 @@ import de.willuhn.jameica.messaging.StatusBarMessage;
 import de.willuhn.jameica.system.Application;
 import de.willuhn.logging.Logger;
 import de.willuhn.util.ApplicationException;
-import de.willuhn.util.I18N;
 
 /**
  * View zum Einrichten eines TransferWise-Kontos.
  */
 public class SetupTransferWiseStep2 extends AbstractSetupTransferWise
 {
-  private final static I18N i18n = Application.getPluginLoader().getPlugin(Plugin.class).getResources().getI18N();
-  
   private Konto konto = null;
   private SupportStatus status = null;
   private Button next = null;
@@ -135,7 +132,7 @@ public class SetupTransferWiseStep2 extends AbstractSetupTransferWise
       info.setText(i18n.tr("Der API-Key des Kontos ist korrekt konfiguriert.\n" +
                            "Prüfen Sie bitte ggf. die Korrektheit des API-Keys."));
     }
-    info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nFür die Prüfung des Schlüsselpaares klicken Sie bitte auf \"Weiter\".",this.konto.getIban()));
+    info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nSie können den API-Key später jederzeit in den Synchronisierungsoptionen des Kontos ändern.\nFür die Prüfung des Schlüsselpaares klicken Sie bitte auf \"Weiter\".",this.konto.getIban()));
     
     info.addButton(b);
     c.addPart(info);
@@ -213,7 +210,7 @@ public class SetupTransferWiseStep2 extends AbstractSetupTransferWise
             Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("Der eingegebene API-Key ist zu kurz"),StatusBarMessage.TYPE_INFO));
           }
           
-          bar.setSelection(haveKey ? 50 : 30);
+          bar.setSelection(haveKey ? 30 : 20);
           getNext().setEnabled(haveKey);
         }
         catch (RemoteException re)

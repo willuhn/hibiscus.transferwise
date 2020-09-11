@@ -98,7 +98,8 @@ public class KeyStorage
     try
     {
       checkAccount(k);
-      getWallet().delete(k.getID());
+      getWallet().delete(k.getID() + SUFFIX_PRIVATE);
+      getWallet().delete(k.getID() + SUFFIX_PUBLIC);
     }
     catch (ApplicationException ae)
     {
