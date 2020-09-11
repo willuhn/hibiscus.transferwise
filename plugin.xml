@@ -19,5 +19,9 @@
     <include>hibiscus\.transferwise\.jar</include>
     <include>.*\.class</include>
   </classfinder>
+  
+  <extensions>
+    <extension extends="de.willuhn.jameica.hbci.gui.menus.KontoList" class="de.willuhn.jameica.hbci.transferwise.gui.ext.KontoMenuExtension"/>
+  </extensions>
 
 </plugin>

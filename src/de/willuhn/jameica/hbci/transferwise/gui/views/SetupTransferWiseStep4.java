@@ -117,7 +117,9 @@ public class SetupTransferWiseStep4 extends AbstractSetupTransferWise
     info.setIcon("transferwise-large.png");
     info.setText(i18n.tr("Sie können nun den Saldo und die Umsätze des Kontos abrufen oder die Synchonisierungsoptionen anpassen.\n" +
                          "Folgen Sie bitte den Anweisungen auf der Webseite, um die neue Schlüsseldatei hochzuladen."));
-    info.setComment(i18n.tr("IBAN des Kontos: {0}.",konto.getIban()));
+    info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\n" +
+                            "Sie können diesen Assistenten später jederzeit erneut starten, indem Sie mit der rechten Maustaste\n" +
+                            "auf Konto klicken und im Kontextmenü die Option\"TransferWise-Einrichtung starten...\" wählen.",konto.getIban()));
     info.setUrl("https://www.willuhn.de/wiki/doku.php?id=support:hibiscus.transferwise#upload");
     
     c.addPart(info);

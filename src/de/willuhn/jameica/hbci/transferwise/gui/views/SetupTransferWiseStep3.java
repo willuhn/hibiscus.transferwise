@@ -272,7 +272,7 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
   private void finish()
   {
     if (bar != null)
-      bar.setSelection(100);
+      bar.setSelection(90);
     
     Application.getMessagingFactory().sendMessage(new StatusBarMessage(i18n.tr("TransferWise-Konto erfolgreich eingerichtet"),StatusBarMessage.TYPE_SUCCESS));
     getNext().setEnabled(true);

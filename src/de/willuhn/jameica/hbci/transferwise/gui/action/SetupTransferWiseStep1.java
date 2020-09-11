@@ -12,6 +12,7 @@ package de.willuhn.jameica.hbci.transferwise.gui.action;
 
 import de.willuhn.jameica.gui.Action;
 import de.willuhn.jameica.gui.GUI;
+import de.willuhn.jameica.hbci.rmi.Konto;
 import de.willuhn.jameica.hbci.transferwise.Plugin;
 import de.willuhn.jameica.hbci.transferwise.SupportStatus;
 import de.willuhn.jameica.system.Application;
@@ -31,10 +32,17 @@ public class SetupTransferWiseStep1 implements Action
   @Override
   public void handleAction(Object context) throws ApplicationException
   {
-    if (!(context instanceof SupportStatus))
+    SupportStatus status = null;
+    
+    if (context instanceof SupportStatus)
+      status = (SupportStatus) context;
+    else if (context instanceof Konto)
+      status = Plugin.getStatus((Konto) context);
+    
+    if (status == null)
       throw new ApplicationException(i18n.tr("Bitte wählen Sie ein Konto aus"));
 
-    GUI.startView(de.willuhn.jameica.hbci.transferwise.gui.views.SetupTransferWiseStep1.class,context);
+    GUI.startView(de.willuhn.jameica.hbci.transferwise.gui.views.SetupTransferWiseStep1.class,status);
   }
 
 }
