@@ -86,7 +86,7 @@ public class TransferwiseSynchronizeJobKontoauszug extends SynchronizeJobKontoau
       params.put("intervalStart",df.format(startDate));
       params.put("intervalEnd",df.format(DateUtil.endOfDay(new Date())));
       
-      final AccountStatement as = this.transportService.get(k,sb.toString(),params,AccountStatement.class);
+      final AccountStatement as = this.transportService.get(k,sb.toString(),params,null,AccountStatement.class);
       
       if (as != null)
       {
