@@ -119,7 +119,7 @@ public class SetupTransferWiseStep4 extends AbstractSetupTransferWise
                          "Folgen Sie bitte den Anweisungen auf der Webseite, um die neue Schlüsseldatei hochzuladen."));
     info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\n" +
                             "Sie können diesen Assistenten später jederzeit erneut starten, indem Sie mit der rechten Maustaste\n" +
-                            "auf das Konto klicken und im Kontextmenü die Option\"TransferWise-Einrichtung starten...\" wählen.",konto.getIban()));
+                            "auf das Konto klicken und im Kontextmenü die Option \"TransferWise-Einrichtung starten...\" wählen.",konto.getIban()));
     info.setUrl("https://www.willuhn.de/wiki/doku.php?id=support:hibiscus.transferwise#upload");
     
     c.addPart(info);
