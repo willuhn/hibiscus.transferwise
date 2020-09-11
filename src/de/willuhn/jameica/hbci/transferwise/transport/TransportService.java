@@ -317,7 +317,8 @@ public class TransportService
       if (token != null)
       {
         final String sig = KeyStorage.sign(konto,token);
-        Logger.info("SCA: sending signatur for token: " + token + ", signature: " + sig);
+        Logger.info("SCA: sending signatur for token: " + token);
+        Logger.debug("SCA: sending signatur: " + sig);
         
         request.addHeader(HEADER_2FA_TOKEN,token);
         request.addHeader(HEADER_2FA_SIGNATURE,sig);
@@ -386,7 +387,7 @@ public class TransportService
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtil.copy(is,bos);
     final String s = bos.toString("UTF-8");
-    Logger.info("response: " + s);
+    Logger.debug("response: " + s);
     return s;
   }
   

@@ -180,7 +180,9 @@ public class KeyStorage
       Signature sig = Signature.getInstance(SIGN_ALG, PROVIDER);
       sig.initSign(kp.getPrivate());
       sig.update(token.getBytes("UTF-8"));
-      return Base64.encode(sig.sign());
+      
+      // Wir nehmen hier den base64-Encoder von Java und nicht unseren eignen, weil wir die Zeilenumbrueche nach 72 Zeichen nicht wollen.
+      return java.util.Base64.getEncoder().encodeToString(sig.sign());
     }
     catch (Exception e)
     {
