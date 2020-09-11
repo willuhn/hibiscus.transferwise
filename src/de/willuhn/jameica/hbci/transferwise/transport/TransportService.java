@@ -316,8 +316,11 @@ public class TransportService
       
       if (token != null)
       {
+        final String sig = KeyStorage.sign(konto,token);
+        Logger.info("SCA: sending signatur for token: " + token + ", signature: " + sig);
+        
         request.addHeader(HEADER_2FA_TOKEN,token);
-        request.addHeader(HEADER_2FA_SIGNATURE,KeyStorage.sign(konto,token));
+        request.addHeader(HEADER_2FA_SIGNATURE,sig);
       }
       
       response = this.client.execute(request);
@@ -330,12 +333,15 @@ public class TransportService
         final Header headerToken  = response.getFirstHeader(HEADER_2FA_TOKEN);
         final String s = headerToken != null ? StringUtils.trimToNull(headerToken.getValue()) : null;
         if (headerStatus != null && Objects.equals(headerStatus.getValue(),"REJECTED") && s != null)
+        {
+          Logger.info("SCA: got request for sca, retry with signed token: " + s);
           return this.get(konto,path,params,s,type);
+        }
       }
       if (status.getStatusCode() > 299)
       {
         String msg = status.getStatusCode() + " " + status.getReasonPhrase();
-        Logger.error("got http status  " + msg);
+        Logger.error("got http status " + msg);
         
         // Checken, ob wir den Fehler lesen koennen
         try
