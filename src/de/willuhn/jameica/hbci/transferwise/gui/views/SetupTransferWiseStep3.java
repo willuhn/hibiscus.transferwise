@@ -178,7 +178,7 @@ public class SetupTransferWiseStep3 extends AbstractSetupTransferWise
     {
       info.setText(i18n.tr("Klicken Sie bitte auf die Schaltfläche \"Neues Schlüsselpaar erstellen...\", um einen neuen Schlüssel zu erzeugen.\n" +
                            "Speichern Sie die erstellte Schlüsseldatei ab und folgen Sie anschließend den Anweisungen auf der Webseite, um den neuen Schlüssel hochzuladen."));
-      info.setUrl("https://www.willuhn.de/wiki/doku.php?id=support:hibiscus.transferwise#upload");
+      info.setUrl("https://www.willuhn.de/wiki/doku.php?id=support:hibiscus.transferwise#schritt_4schluesselpaar_hochladen");
       info.setComment(i18n.tr("IBAN des Kontos: {0}.\n\nKlicken Sie bitte anschließend auf \"Fertigstellen\", um den Assistenten zu beenden.",konto.getIban()));
       b.setEnabled(false);
     }
