@@ -19,6 +19,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public enum TransactionDetailsType
 {
   /**
+   * Unbekannt
+   */
+  UNKNOWN,
+  
+  /**
    * Kartenzahlung.
    */
   CARD,
