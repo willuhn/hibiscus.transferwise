@@ -61,6 +61,10 @@ public enum TransactionDetailsType
   /**
    * Lastschrift.
    */
-  DIRECT_DEBIT
-
+  DIRECT_DEBIT,
+  
+  /**
+   * Abrechnungsgebühr.
+   */
+  ACCRUAL_CHARGE
 }
