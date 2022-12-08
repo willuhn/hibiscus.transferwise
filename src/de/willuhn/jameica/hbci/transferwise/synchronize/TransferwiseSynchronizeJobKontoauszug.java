@@ -186,7 +186,10 @@ public class TransferwiseSynchronizeJobKontoauszug extends SynchronizeJobKontoau
     {
       Date nd = ts.date;
       if (d == null || nd.before(d))
+      {
         d = nd;
+        basedOn = "received data";
+      }
     }
     
     if (d == null && startDate != null)

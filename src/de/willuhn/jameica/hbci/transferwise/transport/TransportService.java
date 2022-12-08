@@ -25,13 +25,11 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.Header;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.net.URIBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -285,8 +283,6 @@ public class TransportService
    */
   public <T> T get(Konto konto, String path, Map<String,String> params, String token, Class<T> type) throws ApplicationException
   {
-    CloseableHttpResponse response = null;
-    
     try
     {
       final String apiKey = konto.getMeta(Plugin.META_PARAM_APIKEY,null);
@@ -324,38 +320,52 @@ public class TransportService
         request.addHeader(HEADER_2FA_SIGNATURE,sig);
       }
       
-      response = this.client.execute(request);
-      final StatusLine status = response.getStatusLine();
-      final String json = this.read(response.getEntity().getContent());
-      if (status.getStatusCode() == 403)
-      {
-        // Checken, ob es ein SCA-Request ist
-        final Header headerStatus = response.getFirstHeader(HEADER_2FA_RESULT);
-        final Header headerToken  = response.getFirstHeader(HEADER_2FA_TOKEN);
-        final String s = headerToken != null ? StringUtils.trimToNull(headerToken.getValue()) : null;
-        if (headerStatus != null && Objects.equals(headerStatus.getValue(),"REJECTED") && s != null)
-        {
-          Logger.info("SCA: got request for sca, retry with signed token: " + s);
-          return this.get(konto,path,params,s,type);
-        }
-      }
-      if (status.getStatusCode() > 299)
-      {
-        String msg = status.getStatusCode() + " " + status.getReasonPhrase();
-        Logger.error("got http status " + msg);
+      final Object result = this.client.execute(request, response -> {
         
-        // Checken, ob wir den Fehler lesen koennen
         try
         {
-          ApiError error = this.mapper.readValue(json, ApiError.class);
-          msg = error.error + ": " + error.message;
+          final int status = response.getCode();
+          final String json = this.read(response.getEntity().getContent());
+          if (status == 403)
+          {
+            // Checken, ob es ein SCA-Request ist
+            final Header headerStatus = response.getFirstHeader(HEADER_2FA_RESULT);
+            final Header headerToken  = response.getFirstHeader(HEADER_2FA_TOKEN);
+            final String s = headerToken != null ? StringUtils.trimToNull(headerToken.getValue()) : null;
+            if (headerStatus != null && Objects.equals(headerStatus.getValue(),"REJECTED") && s != null)
+            {
+              Logger.info("SCA: got request for sca, retry with signed token: " + s);
+              return this.get(konto,path,params,s,type);
+            }
+          }
+          if (status > 299)
+          {
+            String msg = status + " " + response.getReasonPhrase();
+            Logger.error("got http status " + msg);
+            
+            // Checken, ob wir den Fehler lesen koennen
+            try
+            {
+              ApiError error = this.mapper.readValue(json, ApiError.class);
+              msg = error.error + ": " + error.message;
+            }
+            catch (Exception e)
+            {
+            }
+            throw new ApplicationException(msg);
+          }
+          return this.mapper.readValue(json, type);
         }
-        catch (Exception e)
+        catch (ApplicationException ae)
         {
+          return ae;
         }
-        throw new ApplicationException(msg);
-      }
-      return this.mapper.readValue(json, type);
+      });
+
+      if (result instanceof ApplicationException)
+        throw (ApplicationException) result;
+      
+      return (T) result;
     }
     catch (ApplicationException ae)
     {
@@ -369,10 +379,6 @@ public class TransportService
     {
       Logger.error("unable to create GET request",e);
       throw new ApplicationException(i18n.tr("Fehler beim Erstellen der Abfrage: {0}",e.getMessage()));
-    }
-    finally
-    {
-      IOUtil.close(response);
     }
   }
   
@@ -397,7 +403,7 @@ public class TransportService
    */
   private ApiEndpoint getApiEndpoint()
   {
-    return ApiEndpoint.valueOf(settings.getString("andpoint",ApiEndpoint.LIVE.name()));
+    return ApiEndpoint.valueOf(settings.getString("endpoint",ApiEndpoint.LIVE.name()));
   }
   
 }

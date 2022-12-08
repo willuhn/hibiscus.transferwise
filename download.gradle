@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
   compile 'com.fasterxml.jackson.core:jackson-databind:+'
-  compile 'org.apache.httpcomponents:httpclient:4.5.11'
+  compile 'org.apache.httpcomponents.client5:httpclient5:+'
 }
 
 task download(type: Copy) {
