@@ -29,6 +29,11 @@ public enum TransactionDetailsType
   CARD,
   
   /**
+   * Bestellung einer neuen Karte
+   */
+  CARD_ORDER_CHECKOUT,
+  
+  /**
    * Waehrungswechsel.
    */
   CONVERSION,
