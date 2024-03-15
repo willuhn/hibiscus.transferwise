@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -67,6 +68,8 @@ public class TransportService
   
   private CloseableHttpClient client = null;
   private final ObjectMapper mapper = new ObjectMapper();
+  
+  private AtomicInteger errorCount = new AtomicInteger();
 
   
   /**
@@ -334,10 +337,17 @@ public class TransportService
             final String s = headerToken != null ? StringUtils.trimToNull(headerToken.getValue()) : null;
             if (headerStatus != null && Objects.equals(headerStatus.getValue(),"REJECTED") && s != null)
             {
+              final int count = this.errorCount.incrementAndGet();
+              if (count > 5)
+                throw new ApplicationException(i18n.tr("API-Key wurde nicht akzeptiert"));
+              
               Logger.info("SCA: got request for sca, retry with signed token: " + s);
               return this.get(konto,path,params,s,type);
             }
           }
+          
+          this.errorCount.set(0);
+          
           if (status > 299)
           {
             String msg = status + " " + response.getReasonPhrase();
